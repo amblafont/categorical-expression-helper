@@ -204,8 +204,8 @@ and natTransToLeftInfer (c : cursor) (d : datCursor) =
      Ident _ -> raise Not_found
    | Stuff st -> natTransToLeftInferl c st.stList
 
-let rec natTransToLeftl (c : cursor) 
-   (r : ntRequire)(l : datCursor list)
+let rec natTransToLeftl  
+    (r : ntRequire)(c : cursor)(l : datCursor list)
   : datCursor list =
   match l with
     ({ data = Stuff { stList = [ f ; j]} } as ff) ::
@@ -216,18 +216,14 @@ let rec natTransToLeftl (c : cursor)
       {ff with data = Stuff { stTyp = Other; stList = [ r.funct ; j]}}
       :: q
    | t :: q -> (try natTransToLeft c r t :: q with
-         Not_found -> natTransToLeftl c r q)
+        Not_found -> natTransToLeftl r c  q)
    | [] -> raise Not_found
-and natTransToLeft (c : cursor) (r : ntRequire)(d : datCursor) =
+and natTransToLeft  (c : cursor)(r : ntRequire)(d : datCursor) =
   match d.data with
      Ident _ -> raise Not_found
    | Stuff st -> { d with data =
-            Stuff { st with stList = natTransToLeftl c r st.stList}}
+            Stuff { st with stList = natTransToLeftl r c st.stList}}
 
-let ntInferToLeftToString (n : ntInfer) : string =
-  let s = datCursorToString false in
-  Printf.sprintf "%s : %s => ?\n%s : ? -> %s"
-    (s n.nat) (s n.funct) (s n.mor) (s n.obj)
     
 
    

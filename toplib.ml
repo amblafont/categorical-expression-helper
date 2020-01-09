@@ -3,6 +3,15 @@ open Base ;;
 open Stringstuff ;;
 open Aideur;;
 
+(* TODO: make isActive a property of cursors (then, I can display it specially)
+   a quick pass should allow to recover the active cursor
+
+   allow multiple isActive
+   then keepOnlyActive
+   setActive
+   marqué par un !
+*)
+
 
 let mainExpr = ref (string_to_stuffData "F j ; n y ") ;;
 let mainCur = ref (Nb 1);;
@@ -78,9 +87,11 @@ let isetCursor () =
   Printf.printf "Enter new value for cursor (currently %s): " (cursorToString (! mainCur)) ;
   setCur (read_int ()) ;;
 
+let input_stuffData () = string_to_stuffData (read_line ());;
+
 let isetExpression () =
   print_string "Enter new expression: "  ;
-  mainExpr := (string_to_stuffData (read_line ())) ;
+  mainExpr := input_stuffData () ;
   status ();;
 
 
@@ -128,6 +139,44 @@ let wrapMode (l : mode) () = mode l
 
 let statusCmd =  ' ' , ("print expression and current cursor" , status)
 
+(* let ntInferToLeftToString (n : ntInfer) : string =
+ *   let s = datCursorToString false in
+ *   Printf.sprintf "(natural transformation) %s : %s => ?1\n%(morphism)s : ?2 -> %s"
+ *     (s n.nat) (s n.funct) (s n.mor) (s n.obj) *)
+
+let leftNt () =
+  let n = natTransToLeftInferl (! mainCur) (! mainExpr.stList) in
+  let s = datCursorToString false in
+  Printf.printf "(natural transformation) %s : %s => ?1\n(morphism) %s : ?2 -> %s\n"
+    (s n.nat) (s n.funct) (s n.mor) (s n.obj) ;
+  print_flush "What is ?1 ? " ;
+  let g = input_stuffData () in 
+  print_flush "What is ?1 ? " ;
+  let x = input_stuffData () in 
+  status () ;
+  stepDatCursor (natTransToLeftl
+                   {funct = newDatCursor (Stuff g) ;
+                    obj = newDatCursor (Stuff x)}) ;;
+
+
+let ntMode : mode =
+  { commands = [
+        'h', ("move left (e.g.,  F f ; @{1}(n y) becomes n x ; G f)" , leftNt) ;
+        statusCmd 
+      ] 
+    ; prompt = "Natural transformations"
+  }
+  (*
+let ntMode : mode =
+  { commands = [
+
+
+        statusCmd 
+      ] 
+  ; prompt = "Natural transformations"
+  }
+*)
+
 
 let cursorMode : mode =
   { commands = 
@@ -142,7 +191,9 @@ let cursorMode : mode =
 
 let expressionMode =
   { commands = 
-      [  's' , ("set expression" , isetExpression) 
+      [  's' , ("set expression" , isetExpression)  ;
+         'n' , ("natural transformations mode" , wrapMode ntMode) ;
+           statusCmd 
       ] ; prompt = "Expression mode" };;
 
 let mainMode : mode =
