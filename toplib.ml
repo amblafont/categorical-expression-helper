@@ -4,8 +4,8 @@ open Stringstuff ;;
 open Aideur;;
 
 
-let mainExpr = ref Stringstuff.test ;;
-let mainCur = ref (Nb 0);;
+let mainExpr = ref (string_to_stuffData "F j ; n y ") ;;
+let mainCur = ref (Nb 1);;
 
 let setCur (n : int) = mainCur := Nb n;;
 
@@ -30,7 +30,10 @@ let status_with_menu () =
 
 let stepDat (f : datCursor list -> datCursor list) =
   mainExpr := { ! mainExpr with stList = f (! mainExpr).stList} ;
-  status()
+  status() ;;
+
+(* put the cursor on 'j' *)
+stepDat (cursorsForStrl "j") ;;
 
 let stepDatCursor (f : cursor -> datCursor list -> datCursor list) =
   mainExpr := { ! mainExpr with stList = f (! mainCur) (! mainExpr).stList} ;
@@ -80,18 +83,6 @@ let isetExpression () =
   mainExpr := (string_to_stuffData (read_line ())) ;
   status ();;
 
-let iset () =
-  print_menu "Set menu" ;
-  print_endline "c: set cursor\ne : set expression\nq : cancel\n" ;
-  let rec local_loop () =
-    print_prompt "Set menu" ;
-    match get1charn () with
-    'q' -> ()
-    | 'c' -> isetCursor ()
-    | 'e' -> isetExpression ()
-    | _ -> print_endline "Invalid key" ;local_loop ()
-  in
-    local_loop()
 
 let icursorsAtIdentifiers () =
   print_endline "
@@ -102,42 +93,68 @@ Choose an identifier where new cursors will be created in the expression
   curAtStr (read_line ()) ;
   isetCursor () ;;
 
-let printHelp () =
-   print_menu "Help" ;
-   print_endline 
-    "q : Quit
-? : This help
 
-' ' : status
+let quitMenu () = raise Exit ;;
 
-h,j,k,l : vim-like cursor movements
+(* char: character to activate the option,
+   the string describes the mode, and the function does the stuff
+*)
+type mode = { commands : (char * (string * (unit -> unit))) list; prompt : string } ;;
 
-sc : set cursor
-se : set expression
+let helpMode m =
+  print_menu m.prompt ;
+  print_endline "?: help\nq: quit mode\n" ;
+  List.iter (function (c, (s, _)) -> Printf.printf "%c: %s\n" c s) m.commands ;;
 
-c : cursors at identifiers" ;;
+
+let mode (l : mode)  =
+  helpMode l;
+  try
+    while true do
+      print_prompt l.prompt;
+      let c = get1charn () in
+      match c with
+      | 'q' -> raise Exit
+      | '?' -> helpMode l
+      | c ->
+        match List.assoc_opt c l.commands with
+          Some (_, x) -> x ()
+        | None -> print_endline "Invalid key (press ? for help)"
+    done
+  with
+    Exit -> ();;
+
+let wrapMode (l : mode) () = mode l 
+
+let statusCmd =  ' ' , ("print expression and current cursor" , status)
+
+
+let cursorMode : mode =
+  { commands = 
+  [  'h' , ("move left", h );
+    'j' , ("move down", j) ;
+    'k' , ("move up", k) ;
+    'l' , ("move right", l) ;
+    's' , ("set cursor" , isetCursor) ;
+    'n' , ("erase cursors and create new ones at identifiers" , icursorsAtIdentifiers) ;
+     statusCmd 
+  ] ; prompt = "Cursor mode" };;
+
+let expressionMode =
+  { commands = 
+      [  's' , ("set expression" , isetExpression) 
+      ] ; prompt = "Expression mode" };;
+
+let mainMode : mode =
+  { commands =[
+    'c' , ("cursor mode", wrapMode cursorMode) ;
+    'e' , ("expression mode", wrapMode expressionMode) ;
+    statusCmd 
+  ] ; prompt = "Main menu"
+  }
 
 let startLoop () =
-  (print_menu "Main menu: Press '?' for help" ;
+  (
+    (* print_menu "Press '?' for help, 'q' for quit" ; *)
    status () ; ) ;
-  (* let shouldPrint = ref true in *)
-    try
-      while true do
-        print_prompt "Main menu" ;
-        (* (if ! shouldPrint then 
-         *    print_flush "> "
-         *  else shouldPrint := true); *)
-        match get1charn () with
-        | 'q' -> raise Exit
-        | '?' -> printHelp ()
-        | 'h' -> h ()
-        | 'j' -> j ()
-        | 'k' -> k ()
-        | 'l' -> l ()
-        | 's' -> iset ()
-        | ' ' -> status_with_menu ()
-        | 'c' -> icursorsAtIdentifiers ()
-        | _ -> print_endline "Invalid key (press ? for help)"
-      done
-    with
-      Exit -> ();;
+  mode mainMode ;;

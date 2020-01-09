@@ -48,6 +48,5 @@ let string_to_stuffData s =
             let result = Parser.main Lexer.token lexbuf in
      result ;;
 
-let test = string_to_stuffData "F j ; n y " ;;
 
 
