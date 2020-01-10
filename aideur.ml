@@ -3,6 +3,8 @@
 
 open Base ;;
 open Stringstuff ;;
+open Lib ;;
+
 
 
 (* un truc qui assigne à chaque identifiant un type *)
@@ -16,7 +18,6 @@ open Stringstuff ;;
  * 
  * type env = Hash.Tbl ident type_ident *)
 
-let listRemove (cc : 'a)(l : 'a list) = List.filter (fun b -> b <> cc) l
 
 (* On pourrait créer des curseurs pour chaque occurence ! *)
 let dcRemoveCursor (c: cursor)(d : datCursor)  =
@@ -30,59 +31,53 @@ let dcFilterCursor (f : cursor -> bool) (d : datCursor)  =
 let rec filterCursor_rec (f : cursor -> bool) (d : datCursor) =
   dcFilterCursor f 
   (match d.data with
-    Ident n -> d
+    Ident _ | MVar _ -> d
   | Stuff l -> {d with data = Stuff {l with stList = filterCursor_recl f l.stList}})
 and filterCursor_recl(f : cursor -> bool) (l : datCursor list) =
   List.map (filterCursor_rec f) l;;
 
-(* could be more efficient *)
-let removeAllCursors (l : datCursor list) : datCursor list =
-  filterCursor_recl (fun _ -> false) l;;
 
 let removeOtherCursors (c : cursor)(l : datCursor list) : datCursor list =
   filterCursor_recl (fun c2 -> c = c2) l;;
 
 
 
-(* Typically, x does not contain any cursor and is an identifier *)
-let cursorsForDatl (x : dat)(dl : datCursor list) : datCursor list =
-  let n = ref 0 in
-  let dl = removeAllCursors dl in
-   let rec aux d =
-      if x = d.data then
-         (incr n ;
-         dcAddCursor (Nb (! n)) d )
-      else
-           match d.data with
-               | Stuff l ->
-                   { d with data = Stuff {l with stList = (List.map aux l.stList)}}
-               | Ident _ -> d
-   in
-      List.map aux dl ;;
+let cursorsAtDat (x : dat) (d : datCursor) =
+  let n = ref (dcMaxCursor d) in
+  let rec aux (d : datCursor) : datCursor =
+    if dEq x d.data then
+      (incr n ;
+       dcAddCursor (Nb (! n)) d )
+    else
+      match d.data with
+      | Stuff l ->
+        { d with data = Stuff {l with stList = List.map aux l.stList}}
+      | Ident _ | MVar _ -> d
+  in
+    aux d
 
-let cursorsForDat (x : dat)(d : datCursor) : datCursor =
-  List.hd (cursorsForDatl x [ d ]) ;;
+let cursorsAtStr (x : string) (d : datCursor) :
+     datCursor  =
+  cursorsAtDat (Ident (Name x)) d ;;
 
-let cursorsForStrl (x : string) (d : datCursor list) :
-     datCursor list =
-  cursorsForDatl (Ident (Name x)) d ;;
-
-let rec removeCursor_rec (c : cursor) (d : datCursor) =
-  dcRemoveCursor c
-  (match d.data with
-    Ident n -> d
-  | Stuff l ->
-       {d with data = Stuff { l with stList = removeCursor_recl c l.stList }})
-and removeCursor_recl (c : cursor)(l : datCursor list) =
-  List.map (removeCursor_rec c) l;;
-
-
-
-
-type 'a retUpCursor = NotFound | Found | Done
+type retUpCursor = NotFound | Found | Done
 
 (* NotFound: il n'a pas trouvé, Found, il a besoin d'être remonté *)
-let rec upCursorlWithInfo (cc : cursor) = function
+let rec upCursorWithInfo(cc : cursor) (d : datCursor) : datCursor * retUpCursor =
+  if dcMemCursor cc d then
+    dcRemoveCursor cc d , Found
+  else
+    match d.data with
+      Ident _ | MVar _ -> d , NotFound
+    | Stuff st -> 
+      let (dl2 , r) = upCursorlWithInfo cc st.stList in
+      (
+        match r with
+          Done | NotFound -> { d with data = Stuff {st with stList = dl2} } , r
+        | Found -> {  cursors = cc :: d.cursors ;  data = Stuff {st with stList = dl2} } , Done
+      ) 
+
+ and upCursorlWithInfo (cc : cursor) : datCursor list -> datCursor list * retUpCursor  = function
   t :: q ->
     let (t2 , r2) = upCursorWithInfo cc t in
     (match r2 with
@@ -91,43 +86,27 @@ let rec upCursorlWithInfo (cc : cursor) = function
             let (q2 , s2) = upCursorlWithInfo cc q in
             (t2 :: q2) , s2)
 | [] -> [] , NotFound
-and upCursorWithInfo(cc : cursor) (d : datCursor) =
-  if dcMemCursor cc d then
-    dcRemoveCursor cc d , Found
-  else
-    match d.data with
-    Ident n -> d , NotFound
-  | Stuff dl -> 
-    let (dl2 , r) = upCursorlWithInfo cc dl.stList in
-    (
-      match r with
-        Done | NotFound -> { d with data = Stuff {dl with stList = dl2}} , r
-      | Found -> dcAddCursor cc { d with data = Stuff {dl with stList = dl2} } , Done
-    ) ;;
 
-let upCursorl cc dl = fst (upCursorlWithInfo cc dl)
+let upCursor cc d = fst (upCursorWithInfo cc d)
 
 
 let rec downCursor (cc : cursor) (d : datCursor) : datCursor =
   if dcMemCursor cc d then
    (
     match d.data with
-    Ident n -> d
+    Ident _ | MVar _ -> d
   | Stuff ({stList = (t :: q)} as dd) ->
        dcRemoveCursor cc { d with data =
         Stuff {dd with stList = dcAddCursor cc t :: q }} 
   | Stuff {stList = []}  -> raise Not_found)
   else
     match d.data with
-    Ident n -> d
-  | Stuff l -> {d with data = Stuff {l with stList = downCursorl cc l.stList}}
-
-and downCursorl (cc : cursor) (dl : datCursor list) =
-   List.map (downCursor cc) dl;;
+    | Ident _ | MVar _ -> d
+    | Stuff l -> {d with data = Stuff {l with stList = List.map (downCursor cc) l.stList}}
 
 let rec nextCursor (cc : cursor) (d : datCursor) : datCursor =
   match d.data with
-    Ident n -> d
+    Ident _ | MVar _ -> d
   | Stuff l -> {d with data = Stuff {l with stList = nextCursorl cc l.stList}}
 and nextCursorl (cc : cursor) = function
   t1 :: t2 :: q ->
@@ -141,7 +120,7 @@ and nextCursorl (cc : cursor) = function
 
 let rec prevCursor (cc : cursor) (d : datCursor) : datCursor =
   match d.data with
-    Ident n -> d
+    Ident _ | MVar _ -> d
   | Stuff l -> {d with data = Stuff
       {l with stList = (prevCursorl cc l.stList )}}
 and prevCursorl (cc : cursor) = function
@@ -201,7 +180,7 @@ let rec natTransToLeftInferl (c : cursor) (l : datCursor list)
    | [] -> raise Not_found
 and natTransToLeftInfer (c : cursor) (d : datCursor) =
   match d.data with
-     Ident _ -> raise Not_found
+     Ident _ | MVar _ -> raise Not_found
    | Stuff st -> natTransToLeftInferl c st.stList
 
 let rec natTransToLeftl  
@@ -220,7 +199,7 @@ let rec natTransToLeftl
    | [] -> raise Not_found
 and natTransToLeft  (c : cursor)(r : ntRequire)(d : datCursor) =
   match d.data with
-     Ident _ -> raise Not_found
+     Ident _ | MVar _ -> raise Not_found
    | Stuff st -> { d with data =
             Stuff { st with stList = natTransToLeftl r c st.stList}}
 

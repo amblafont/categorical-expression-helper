@@ -1,3 +1,4 @@
+(* Tip: to remove an active cursor, go up until it disappears *)
 Toplib.startLoop() ;;
 (*
 

@@ -1,26 +1,43 @@
 /* File parser.mly */
-%token <string> IDENT
+%token <string> IDENT 
+%token <int> INT
 %token LPAREN RPAREN
 %token SEMICOLON
+%token LBRACE RBRACE AT QUESTION
 %token EOF
 %start main             /* the entry point */
-%type <Base.stuffData> main
+%type <Base.datCursor> main
+%type <Base.cursor list> cursors
+%type <Base.cursor> cursor
+%type <Base.dat> dat
+%type <Base.datCursor> expr
 %%
 main:
-   listexpr EOF                { { Base.stTyp = Base.Other ; Base.stList = $1} }
-    | listsemiexpr EOF { { Base.stTyp = Base.Composition ; Base.stList = $1} }
-;
+  expr EOF { $1 } ;
+
 expr:
-  | LPAREN listexpr RPAREN      { Base.mkListDatCursor $2 Base.Other}
-    | LPAREN listsemiexpr RPAREN      { Base.mkListDatCursor $2 Base.Composition}
-    | IDENT { Base.mkIdentDatCursor $1 }
+    | LBRACE cursors RBRACE AT dat { {Base.data = $5 ; Base.cursors = $2}}
+      | cursor AT dat { {Base.data = $3 ; Base.cursors = [ $1 ]} }
+      | dat { Base.newDatCursor $1 } ;
+cursors:
+   cursor { [ $1 ] }
+  | cursor cursors { $1 :: $2 } ;
+
+cursor :
+  INT  { Base.Nb $1}
+  | QUESTION IDENT { Base.CurMVar (Base.Name $2)} ;
+
+dat:
+  | LPAREN listexpr RPAREN      { Base.mkListDat $2 Base.Other } 
+  | LPAREN listsemiexpr RPAREN    { Base.mkListDat $2 Base.Composition }
+  | IDENT { Base.Ident (Name $1) }
+  | QUESTION IDENT { Base.MVar (Name $2)}
     ;
 listexpr:
     expr  { [ $1 ] }
-  | expr listexpr { $1 :: $2 }
+  | expr listexpr { $1 :: $2 } ;
 listsemiexpr:
-    listexpr SEMICOLON listexpr
-    { [ Base.mkListDatCursor $1 Base.Other ;
-        Base.mkListDatCursor $3 Base.Other ] }
-  | listexpr SEMICOLON listsemiexpr { Base.mkListDatCursor $1 Base.Other :: $3 }
+    expr SEMICOLON expr
+      { [ $1 ; $3 ] }
+  | expr SEMICOLON listsemiexpr { $1 :: $3 }
  

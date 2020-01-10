@@ -3,7 +3,13 @@
 
 open Base
 
-let stuffTypeInfixStr  = function
+
+let levelStuffType : stuffType -> level  = function
+    Composition -> 3.0
+  | Other -> 4.0
+let precPrefixCursors : level = 5.0
+
+let stuffTypeInfixStr = function
    Composition -> " ; "
  | Other -> " ";;
 
@@ -19,31 +25,47 @@ let joinAround (before : string)(after : string)(alone : bool)(ch : string) = fu
    | l -> before ^ join ch l ^ after ;;
 
  
-let cursorToString (c : cursor) = match c with
-  Nb n -> string_of_int n ;;
 
 let identToString (c : ident) = match c with
   Name n -> n;;
 
-let rec datToString (printCursors : bool) (d : dat) =
+let mvarToString (c : mvar) = "?" ^ identToString c
+
+let cursorToString (env : env)(c : cursor) = match c with
+  | CurMVar m -> mvarToString m
+  | Nb n ->
+    (if List.mem c env.activeCursors then "!" else "") ^ string_of_int n ;;
+
+let mayEnclose outerPrec prec s =
+  if outerPrec >= prec then
+    "(" ^ s ^ ")"
+  else
+    s
+
+
+let rec datToString (env : env) (d : dat) =
   match d with
     Ident i -> identToString i
-  | Stuff s -> stuffDataToString printCursors s
-and datCursorToString (printCursors : bool) (d : datCursor) =
-   let s = datToString printCursors d.data in
-   if printCursors && d.cursors <> [] then
-     joinAround "{" "}@" false " " (List.map cursorToString d.cursors) ^ s
-   else s
+  | MVar m -> mvarToString m
+  | Stuff s -> stuffDataToString env s
+and datCursorToString env (d : datCursor) =
+   if env.printCursors && d.cursors <> [] then
+     joinAround "{" "}@" false " " (List.map (cursorToString env) d.cursors) ^
+     datToString {env with outerPrec = precPrefixCursors} d.data 
+   else 
+       datToString env d.data 
    
 (* and datCursorToStringl (printCursors : bool) (dl : datCursor list) = join " ∘ " (List.map datCursorToString dl) *)
-and stuffDataToString (printCursors : bool) (s : stuffData) =
-  let sl = (List.map (datCursorToString printCursors) s.stList) in
-  joinAround "(" ")" false
+and stuffDataToString (env : env) (s : stuffData) =
+  let prec = levelStuffType s.stTyp in
+  let sl = (List.map (datCursorToString {env with outerPrec = prec}) s.stList) in
+  mayEnclose env.outerPrec prec
+    (join
     (* (match s.stList with [ {data = Ident _} ] -> true | _ -> false ) *)
-  (stuffTypeInfixStr s.stTyp) sl
+       (stuffTypeInfixStr s.stTyp) sl)
 ;;
 
-let string_to_stuffData s =
+let string_to_datCursor (s : string) : datCursor =
             let lexbuf = Lexing.from_string s in
             let result = Parser.main Lexer.token lexbuf in
      result ;;
