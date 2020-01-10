@@ -6,6 +6,12 @@ let rec listNoDup (l : 'a list) : bool =
   | [] -> true
   | t :: q -> not (List.mem t q) && listNoDup q
 
+(* list duplicates *)
+let rec listListDup (l : 'a list) : 'a list = 
+  match l with
+  | [] -> []
+  | t :: q -> if (List.mem t q) then t :: listListDup q else listListDup q
+
 let maxList (smallest : 'a)(l : 'a list) : 'a =
   List.fold_left max smallest l
 

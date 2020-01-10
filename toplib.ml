@@ -116,11 +116,41 @@ let print_prompt (menu : string) =
  *   Printf.printf "Enter new value for cursor (currently %s): " (cursorToString (! mainCur)) ;
  *   setCur (read_int ()) ;; *)
 
-let input_datCursor () = string_to_datCursor (read_line ());;
+(* let input_datCursor () = string_to_datCursor (read_line ());; *)
+
+let getDatCursor () =
+  let aux () =
+    let s = read_line () in
+    if s = "cancel" then raise Exit else
+      try
+        let d = string_to_datCursor s in
+        let l = Lib.listListDup (listCursors d) in
+        if l <> [] then
+          (print_endline ("Invalid expression: the following cursors appear many times: " ^ join " " (List.map (cursorToString (!mainEnv)) l));
+           None)
+        else if not (noMVars d) then
+          (print_endline "Metavariables not allowed" ; None)
+        else
+          Some d
+      with 
+        Parsing.Parse_error -> print_flush "Parse error. "; None
+  in
+  let rec loop () = 
+    match aux () with
+      None -> print_endline " Please try again (write 'cancel' to cancel)" ; 
+       loop()
+    | Some x -> x
+  in
+  loop() ;;
+
+let mayGetDatCursor () =
+  try getDatCursor () with
+  Exit -> ! mainExpr ;;
+
 
 let isetExpression () =
   print_string "Enter new expression: "  ;
-  mainExpr := input_datCursor () ;
+  mainExpr := mayGetDatCursor () ;
   status ();;
 
 
@@ -181,11 +211,14 @@ let leftNt () =
     (s n.nat) (s n.funct) (s n.mor) (s n.obj) ;
   print_endline "Please fill these unknowns:" ;
   print_flush "?1 : " ;
-  let g = input_datCursor () in 
-  print_flush "?2 : " ;
-  let x = input_datCursor () in 
-  status () ;
-  mainExpr := natTransToLeft cur {funct = g ; obj = x} (! mainExpr) ;;
+  try 
+    let g = getDatCursor () in 
+    print_flush "?2 : " ;
+    let x = getDatCursor () in 
+    status () ;
+    mainExpr := natTransToLeft cur {funct = g ; obj = x} (! mainExpr)
+  with
+  Exit -> ()
 
 
 let ntMode : mode =
