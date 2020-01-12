@@ -1,4 +1,8 @@
 /* File parser.mly */
+/*
+  https://stackoverflow.com/questions/40754644/yacc-precedence-of-a-rule-with-no-operator
+                                                                                   http://www.dabeaz.com/ply/ply.html#ply_nn27
+*/
 %token <string> IDENT 
 %token <int> INT
 %token LPAREN RPAREN

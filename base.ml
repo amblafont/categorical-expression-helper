@@ -40,8 +40,21 @@ let rec listCursors (d : datCursor) : cursor list =
   | Ident _ | MVar _ -> d.cursors 
   | Stuff st -> d.cursors @ List.flatten (List.map listCursors st.stList)
 
-let rec listActiveCursors (env : env)(d : datCursor) : cursor list =
-  List.filter (fun x -> List.mem x env.activeCursors) (listCursors d)
+(* list of dat cursors with multiple active cursors (should not exist) *)
+let rec listDcMultiCurs (activeCursors : cursor list)(d : datCursor) : datCursor list =
+  let x =
+  (match d.data with
+  | Ident _ | MVar _ -> []
+  | Stuff st -> List.flatten (List.map (listDcMultiCurs activeCursors) st.stList))
+  in
+  if List.length (List.filter (fun x -> List.mem x activeCursors) d.cursors) > 1
+  then
+    d :: x
+  else
+    x
+
+let rec listActiveCursors (activeCursors : cursor list)(d : datCursor) : cursor list =
+  List.filter (fun x -> List.mem x activeCursors) (listCursors d)
 
 let rec dcListDatMVars (d : datCursor) : mvar list =
   match d.data with
@@ -53,13 +66,18 @@ let rec dcListCursorMVars (d : datCursor) : mvar list =
   List.flatten (List.map (function CurMVar x -> [x] | _ -> []) d.cursors) @
   (match d.data with
    | Ident _ | MVar _ -> []
-   | Stuff st ->  List.flatten (List.map dcListCursorMVars st.stList))
+   | Stuff st -> dclListCursorMVars st.stList)
+and
+  dclListCursorMVars l =
+                     List.flatten (List.map dcListCursorMVars l)
 
 let rec dcListDatMVars (d : datCursor) : mvar list =
   match d.data with
   | Ident _ -> []
   | MVar x -> [ x ]
-  | Stuff st -> List.flatten (List.map dcListDatMVars st.stList)
+  | Stuff st -> dclListDatMVars st.stList
+and dclListDatMVars (dl : datCursor list) : mvar list =
+  List.flatten (List.map dcListDatMVars dl)
 
 
 let rec removeAllCursors (d : datCursor) : datCursor =
@@ -81,11 +99,18 @@ let rec dcMaxCursor (d : datCursor) : int  =
 
 
 let cursorsAreUnique (d : datCursor) : bool =
-  listNoDup (listCursors d)
+  listNoDup (listCursors d) ;;
+
+
+
+
 
 
 let datCursorIsValid (d : datCursor) : bool =
-  cursorsAreUnique d ;;
+  cursorsAreUnique d   ;;
+
+let datCursorIsValidInEnv (env : cursor list) (d : datCursor) : bool =
+   datCursorIsValid d && (listDcMultiCurs env d = []) ;;
 
 let noMVars (d : datCursor) : bool =
   dcListCursorMVars d = [] && dcListDatMVars d = []

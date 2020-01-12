@@ -56,7 +56,7 @@ let status_with_menu () =
 exception NeedsExactlyOneActiveCursor ;;
 
 let getTheCursor () = 
-  match listActiveCursors (! mainEnv) (! mainExpr) with
+  match listActiveCursors (! mainEnv.activeCursors) (! mainExpr) with
     [ t ] -> t
   | _ -> raise NeedsExactlyOneActiveCursor ;;
 
@@ -128,6 +128,8 @@ let getDatCursor () =
         if l <> [] then
           (print_endline ("Invalid expression: the following cursors appear many times: " ^ join " " (List.map (cursorToString (!mainEnv)) l));
            None)
+        else if not (datCursorIsValidInEnv (!mainEnv).activeCursors d) then
+          (print_endline "Invalid expression" ; None)
         else if not (noMVars d) then
           (print_endline "Metavariables not allowed" ; None)
         else
@@ -203,11 +205,61 @@ let statusCmd =  ' ' , ("print expression and current cursor" , status)
  *   Printf.sprintf "(natural transformation) %s : %s => ?1\n%(morphism)s : ?2 -> %s"
  *     (s n.nat) (s n.funct) (s n.mor) (s n.obj) *)
 
+open Equation ;;
+
+let equationToShortString (e : equation) : string =
+  stuffDataToString emptyEnv e.lhs ^ "  =  " ^ stuffDataToString emptyEnv e.rhs ;;
+
+let equationToString (e : equation) : string =
+  equationToShortString e ^ "\n\n" ^
+    tokensToString e.str ;;
+
+  
+
+let equation_rewrite (e : equation)() =
+  let (inf, _) = findMatchingDatCursor (! mainEnv).activeCursors e.lhs None (! mainExpr)
+  in
+  let e' = equationSubst inf e in
+  print_endline (equationToString e') ;
+  let la = dclListDatMVars e'.rhs.stList in
+  let lc = dclListCursorMVars e'.rhs.stList in
+  print_endline "Enter the following unspecified meta-variables:" ;
+  let la' = List.map
+      (fun m ->
+         print_flush (mvarToString m ^" ") ;
+         (m , (getDatCursor ()).data)
+      )
+      la
+  in
+  print_endline "Enter the following unspecified cursors:" ;
+  let lc' = List.map
+      (fun m ->
+         print_flush (mvarToString m ^" ") ;
+         (m , Nb (get1intMultiFiguren ()))
+      )
+      lc
+  in
+  let rhs' = stuffDataSubstMVars true { dcMVars = la' ; cursorMVars = lc'} e'.rhs in
+  let (_, e') = findMatchingDatCursor (! mainEnv).activeCursors e.lhs (Some rhs'.stList)
+      (! mainExpr)
+  in
+  mainExpr := e' ;;
+
+let equation_to_mode (e : equation)(prompt : string) : 
+  mode =
+  (* (char * (string * (unit -> unit))) list = *)
+  let e2 = equation_swap e in
+  {commands = 
+  [ 'h', (equationToShortString e2, equation_rewrite e2) ;
+    'l', (equationToShortString e, equation_rewrite e)
+    
+  ] ; prompt = prompt }
+
 let leftNt () =
   let cur = getTheCursor () in
   let n = natTransToLeftInfer cur (! mainExpr) in
   let s = datCursorToString {! mainEnv with printCursors = false} in
-  Printf.printf "(natural transformation) %s : %s => ?1\n(morphism) %s : ?2 -> %s\n"
+  Printf.printf "(natural transformation) %s : %s ⇒ ?1\n(morphism) %s : ?2 → %s\n"
     (s n.nat) (s n.funct) (s n.mor) (s n.obj) ;
   print_endline "Please fill these unknowns:" ;
   print_flush "?1 : " ;
@@ -218,7 +270,7 @@ let leftNt () =
     status () ;
     mainExpr := natTransToLeft cur {funct = g ; obj = x} (! mainExpr)
   with
-  Exit -> ()
+  Exit -> print_endline "Cancelling" 
 
 
 let ntMode : mode =
@@ -240,7 +292,7 @@ let ntMode : mode =
 *)
 
 let printActivatedCursors () =
-  print_endline ("Activated cursors: [" ^ (join " " (List.map (cursorToString (!mainEnv)) (listActiveCursors (! mainEnv)(! mainExpr)))) ^ "]") ;;
+  print_endline ("Activated cursors: [" ^ (join " " (List.map (cursorToString (!mainEnv)) (listActiveCursors (! mainEnv).activeCursors(! mainExpr)))) ^ "]") ;;
 
 let printTheoreticalActivatedCursors () =
   print_endline ("Theoretically activated cursors: [" ^ (join " " (List.map (cursorToString (!mainEnv)) (! mainEnv).activeCursors)) ^ "]") ;;
@@ -286,9 +338,11 @@ let mainMode : mode =
   { commands =[
     'c' , ("cursor mode", wrapMode cursorMode) ;
     'e' , ("expression mode", wrapMode expressionMode) ;
+    'n' , ("natural transformation mode (experimental)", wrapMode (equation_to_mode equation_nt "Natural Transformations")) ;
     statusCmd 
   ] ; prompt = "Main menu"
   }
+
 
 let startLoop () =
   (

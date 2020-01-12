@@ -18,4 +18,11 @@ let maxList (smallest : 'a)(l : 'a list) : 'a =
 
 let string_of_char = String.make 1 
 
+let explode str =
+  let rec exp a b =
+    if a < 0 then b
+    else exp (a - 1) (str.[a] :: b)
+  in
+  exp (String.length str - 1) []
+
 

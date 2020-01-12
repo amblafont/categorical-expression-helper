@@ -11,7 +11,7 @@ OUTPROG2=testparser
 # units: mod1, mod2 and mod3.
 
 # The list of object files for prog1
-PROG1_OBJS=lib.cmo base.cmo lexer.cmo parser.cmo stringstuff.cmo aideur.cmo toplib.cmo top.cmo
+PROG1_OBJS=lib.cmo base.cmo lexer.cmo parser.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo top.cmo
 PROG2_OBJS=lib.cmo base.cmo lexer.cmo parser.cmo stringstuff.cmo testparser.cmo
 GENERATED=lexer.ml parser.ml parser.mli
 
