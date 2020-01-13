@@ -1,4 +1,5 @@
 OCAMLC=ocamlc
+OCAMLMKTOP=ocamlmktop
 OCAMLOPT=ocamlopt
 OCAMLDEP=ocamldep
 INCLUDES=unix.cma                 # all relevant -I options here
@@ -10,13 +11,18 @@ OUTPROG2=testparser
 # prog1 should be compiled to bytecode, and is composed of three
 # units: mod1, mod2 and mod3.
 
+PROG1_WITHOUT_TOP=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo 
+
 # The list of object files for prog1
-PROG1_OBJS=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo top.cmo
+PROG1_OBJS=$(PROG1_WITHOUT_TOP) top.cmo
 PROG2_OBJS=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo testparserExpr.cmo
 GENERATED=lexerExpr.ml parserExpr.ml parserExpr.mli
 
 mainloop: $(GENERATED) $(PROG1_OBJS)
 	$(OCAMLC) -o $(OUTPROG1) $(OCAMLFLAGS) $(PROG1_OBJS)
+
+topcaml: $(GENERATED) $(PROG1_WITHOUT_TOP)
+	$(OCAMLMKTOP) -o topcaml $(OCAMLFLAGS) $(PROG1_WITHOUT_TOP)
 
 testparser: $(GENERATED) $(PROG2_OBJS)
 	$(OCAMLC) -o $(OUTPROG2) $(OCAMLFLAGS) $(PROG2_OBJS)
@@ -52,6 +58,7 @@ parserExpr.ml parserExpr.mli:
 clean:
 	rm -f $(OUTPROG1)
 	rm -f $(OUTPROG2)
+	rm -f topcaml
 	rm -f *.cm[iox]
 	rm -f $(GENERATED)
 	rm .depend
