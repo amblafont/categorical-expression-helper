@@ -1,7 +1,7 @@
 OCAMLC=ocamlc
 OCAMLMKTOP=ocamlmktop
 OCAMLOPT=ocamlopt
-OCAMLDEP=ocamldep
+OCAMLDEP=ocamldep -intf .mli -intf .mly -impl .mli -impl .mll -impl .mly
 INCLUDES=unix.cma                 # all relevant -I options here
 OCAMLFLAGS=$(INCLUDES)    # add other options for ocamlc here
 OCAMLOPTFLAGS=$(INCLUDES) # add other options for ocamlopt here
@@ -27,15 +27,18 @@ topcaml: $(GENERATED) $(PROG1_WITHOUT_TOP)
 testparser: $(GENERATED) $(PROG2_OBJS)
 	$(OCAMLC) -o $(OUTPROG2) $(OCAMLFLAGS) $(PROG2_OBJS)
 
+# should guess !
 
-lexerExpr.ml: parserExpr.cmo
-	ocamllex lexerExpr.mll
+parserExpr.ml: base.cmo
+parserExpr.mli: base.cmo
+lexerExpr.ml: base.cmo parserExpr.cmi
+# 	ocamllex lexerExpr.mll
 
-parserExpr.cmo: base.cmo parserExpr.cmi
+# parserExpr.cmo: base.cmo parserExpr.cmi
 
 
-parserExpr.ml parserExpr.mli:
-	ocamlyacc parserExpr.mly
+# parserExpr.ml parserExpr.mli:
+# 	ocamlyacc parserExpr.mly
 
 
 # prog2 should be compiled to native-code, and is composed of two
@@ -43,7 +46,7 @@ parserExpr.ml parserExpr.mli:
 
 
 # Common rules
-.SUFFIXES: .ml .mli .cmo .cmi .cmx
+.SUFFIXES: .mli .mll .mly .ml .cmo .cmi .cmx
 
 .ml.cmo:
 	$(OCAMLC) $(OCAMLFLAGS) -c $<
@@ -53,6 +56,13 @@ parserExpr.ml parserExpr.mli:
 
 .ml.cmx:
 	$(OCAMLOPT) $(OCAMLOPTFLAGS) -c $<
+
+.mll.ml :
+	ocamllex $(OLEXFLAGS) $<
+.mly.ml :
+	ocamlyacc $(OYACCFLAGS) $<
+.mly.mli:
+	ocamlyacc $(OYACCFLAGS) $<
 
 # Clean up
 clean:
