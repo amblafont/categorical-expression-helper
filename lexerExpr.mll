@@ -1,5 +1,5 @@
 {
- open Parser        (* The type token is defined in parser.mli *)
+ open ParserExpr        (* The type token is defined in parser.mli *)
  exception Eof
 }
 rule token = parse

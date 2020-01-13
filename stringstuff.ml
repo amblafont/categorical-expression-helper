@@ -67,7 +67,7 @@ and stuffDataToString (env : env) (s : stuffData) =
 
 let string_to_datCursor (s : string) : datCursor =
             let lexbuf = Lexing.from_string s in
-            let result = Parser.main Lexer.token lexbuf in
+            let result = ParserExpr.main LexerExpr.token lexbuf in
      result ;;
 
 

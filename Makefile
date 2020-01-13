@@ -11,9 +11,9 @@ OUTPROG2=testparser
 # units: mod1, mod2 and mod3.
 
 # The list of object files for prog1
-PROG1_OBJS=lib.cmo base.cmo lexer.cmo parser.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo top.cmo
-PROG2_OBJS=lib.cmo base.cmo lexer.cmo parser.cmo stringstuff.cmo testparser.cmo
-GENERATED=lexer.ml parser.ml parser.mli
+PROG1_OBJS=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo top.cmo
+PROG2_OBJS=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo testparserExpr.cmo
+GENERATED=lexerExpr.ml parserExpr.ml parserExpr.mli
 
 mainloop: $(GENERATED) $(PROG1_OBJS)
 	$(OCAMLC) -o $(OUTPROG1) $(OCAMLFLAGS) $(PROG1_OBJS)
@@ -22,14 +22,14 @@ testparser: $(GENERATED) $(PROG2_OBJS)
 	$(OCAMLC) -o $(OUTPROG2) $(OCAMLFLAGS) $(PROG2_OBJS)
 
 
-lexer.ml: parser.cmo
-	ocamllex lexer.mll
+lexerExpr.ml: parserExpr.cmo
+	ocamllex lexerExpr.mll
 
-parser.cmo: base.cmo parser.cmi
+parserExpr.cmo: base.cmo parserExpr.cmi
 
 
-parser.ml parser.mli:
-	ocamlyacc parser.mly
+parserExpr.ml parserExpr.mli:
+	ocamlyacc parserExpr.mly
 
 
 # prog2 should be compiled to native-code, and is composed of two
