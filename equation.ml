@@ -72,27 +72,34 @@ réutilsier le truc
    This hackish definition is to avoid copy and paste
    the second projection is meaningful only in case of PrefixMatchReplaceWith
 *)
-type matchDatCursorMode = PrefixMatch | PrefixMatchReplaceWith of (datCursor list) | ExactMatch ;;
+(* type matchDatCursorMode = PrefixMatch | PrefixMatchReplaceWith of (datCursor list) | ExactMatch ;; *)
+(* returns what was missing *)
 let rec matchDatCursorlHeadWith 
-    (activeCursors : cursor list)(mode : matchDatCursorMode) (hand : datCursor list)(dl : datCursor list) :
+    (activeCursors : cursor list) (hand : datCursor list)(dl : datCursor list) :
   (* list associative *)
   inferMVar * datCursor list
    =
-  match hand,dl,mode with
-  | [],[], ExactMatch -> emptyInferMVar , []
-  | [] , l , PrefixMatch -> emptyInferMVar, []
-  | [] , l , PrefixMatchReplaceWith r -> emptyInferMVar , r @ l
-  | t :: q , t' :: q' , mode ->
+  match hand,dl with
+  | [] , l -> emptyInferMVar, l
+  | t :: q , t' :: q' ->
     let m1 = matchDatCursorHeadWith activeCursors t t' in
-    let m2,q'2 = matchDatCursorlHeadWith activeCursors mode q q' in
+    let m2,q'2 = matchDatCursorlHeadWith activeCursors q q' in
     (try
       checkAndIncInferMVar m1 m2
-     with Incoherent -> raise Not_found) ,
-    t' :: q'2
-  | _, _ , _ -> raise Not_found
+     with Incoherent -> raise Not_found) , q'2
+  | _, _ -> raise Not_found
+and matchExactDatCursorlHeadWith 
+    (activeCursors : cursor list) (hand : datCursor list)(dl : datCursor list)
+  : inferMVar =
+  match matchDatCursorlHeadWith activeCursors hand dl with
+    (inf , []) -> inf
+  | _ -> raise Not_found
+
 and matchDatCursorHeadWith (activeCursors : cursor list)(d : datCursor)(d' : datCursor) :
     inferMVar =
-    emptyInferMVar
+  let infCursors = matchCursorsHeadWith activeCursors d.cursors d'.cursors in
+  let infDat = matchDatHeadWith activeCursors d.data d'.data in
+  checkAndIncInferMVar infCursors infDat
 and matchCursorsHeadWith (activeCursors : cursor list)(c : cursor list)(c' : cursor list) : inferMVar
   =
   List.fold_left
@@ -118,30 +125,31 @@ and matchDatHeadWith (activeCursors : cursor list)(d : dat)(d' : dat) :
     | _,_ -> raise Not_found
 and matchStuffDataHeadWith (activeCursors : cursor list)(st : stuffData) (st' : stuffData) : inferMVar =
   if st.stTyp = st'.stTyp then
-    fst (matchDatCursorlHeadWith activeCursors ExactMatch st.stList st'.stList)
+    matchExactDatCursorlHeadWith activeCursors st.stList st'.stList
   else
     raise Not_found
 
     (* and matchCursorsWith _ _ = true *)
 
 
-(* the second projection is meaningful only in the case replaceWith is not None*)
-let rec findMatchingDatCursor (activeCursors : cursor list)(h : stuffData)(replaceWith : (datCursor list) option)(d : datCursor) : inferMVar * datCursor =
+(* the second projection says what happens if replacing the matching with replaceWith *)
+let rec findMatchingDatCursor (activeCursors : cursor list)(h : stuffData)(replaceWith : datCursor list)(d : datCursor) : inferMVar * datCursor =
   (match d.data with
    | Stuff st ->
      let inf , st' = findMatchingStuffData activeCursors h replaceWith st in
      (inf , {d with data = Stuff st'})
    | _ -> raise Not_found )
-and findMatchingStuffData (activeCursors : cursor list)(st : stuffData) (replaceWith : (datCursor list) option)(st' : stuffData) : inferMVar * stuffData =
+and findMatchingStuffData (activeCursors : cursor list)(st : stuffData) (replaceWith : datCursor list)(st' : stuffData) : inferMVar * stuffData =
     if st.stTyp = st'.stTyp then
       let inf, l = findMatchingDatCursorl activeCursors st replaceWith st'.stList in
       inf , {st' with stList = l}
     else
       raise Not_found
-and  findMatchingDatCursorl (activeCursors : cursor list)(h : stuffData)(replaceWith : (datCursor list) option)(d : datCursor list) : inferMVar * datCursor list =
+and  findMatchingDatCursorl (activeCursors : cursor list)(h : stuffData)(replaceWith : (datCursor list))(d : datCursor list) : inferMVar * datCursor list =
   let h' : datCursor list = h.stList in
   try
-     matchDatCursorlHeadWith activeCursors (match replaceWith with Some x -> PrefixMatchReplaceWith x | None -> PrefixMatch) h' d 
+    let (inf, dl) = matchDatCursorlHeadWith activeCursors h' d in
+    inf , replaceWith @ dl
   with
     Not_found ->
     match d with
@@ -225,20 +233,20 @@ let tokensToString (l : strToken list) : string =
 *)
 let rec str_charl_to_tokenl (s : char list)(prev : string) : strToken list =
   match s with
-  [] -> []
+  [] -> [ Str prev ]
   | '?' :: q -> Str prev :: dcMVar_charl_to_tokenl q ""
   (* | '!' :: q -> Str prev :: curMVar_charl_to_tokenl q "" *)
   | c :: q -> str_charl_to_tokenl q (prev ^ (string_of_char c))
 and dcMVar_charl_to_tokenl (s : char list)(prev : string) : strToken list =
   match s with
-    [] -> []
-  | ('a'..'Z' as c) :: q -> dcMVar_charl_to_tokenl q (prev ^ (string_of_char c))
-  | c :: q -> MVar (Name prev) :: str_charl_to_tokenl q "" ;;
-(* and curMVar_charl_to_tokenl (s : char list)(prev : string) : strToken list =
- *   match s with
- *     [] -> []
- *   | ('a'..'Z' as c) :: q -> curMVar_charl_to_tokenl q (prev ^ (string_of_char c))
- *   | c :: q -> CurMVar (Name prev) :: str_charl_to_tokenl q "" *)
+    [] -> [MVar (Name prev)]
+  | ('a'..'z' as c) :: q
+  | ('A'..'Z' as c) :: q
+    ->
+    print_endline "ici" ;
+    dcMVar_charl_to_tokenl q (prev ^ (string_of_char c))
+  | c :: q -> MVar (Name prev) :: str_charl_to_tokenl q (string_of_char c) ;;
+
 
 let string_to_strToken (s : string) : strToken list =
   str_charl_to_tokenl (explode s) ""
@@ -246,20 +254,42 @@ let string_to_strToken (s : string) : strToken list =
 type equation = { lhs : stuffData ; rhs : stuffData ; str : strToken list} ;;
 
 let equationSubst (env : inferMVar) (e : equation) : equation =
-  { e with
+  { 
     lhs = stuffDataSubstMVars false env e.lhs ;
-    rhs = stuffDataSubstMVars false env e.rhs
+    rhs = stuffDataSubstMVars false env e.rhs ;
+    str = List.map (strTokenSubst env) e.str ;
   }
 
+(*
+    tokensToString (string_to_strToken "(natural transformation): ?n : ?F ⇒ ?G (morphism) ?f : ?x → ?y")
+   match 'b' with 'a' .. 'z' -> "oui" | _ -> "non" ;;
+   findMatchingDatCursor [ Nb 0 ] equation_nt.rhs None (! mainExpr)
+   findMatchingDatCursor [ Nb 0 ] equation_nt.lhs None (! mainExpr)
+*)
 
 (* type equation = handside * handside;; *)
-let equation_nt : equation =
-  { lhs = string_to_stuffData "((?F ?f) ; ?c@(?n ?y))" ;
-    rhs = string_to_stuffData "(?c@(?n ?x) ; (?G ?f))" ;
-    str = string_to_strToken
-        "(natural transformation): ?n : ?F ⇒ ?G
-(morphism) ?f : ?x → ?y"
-  }
+
+let equationToShortString (e : equation) : string =
+  stuffDataToString emptyEnv e.lhs ^ "  =  " ^ stuffDataToString emptyEnv e.rhs ;;
+
+let equationToString (e : equation) : string =
+  equationToShortString e ^ "\n\n" ^
+  tokensToString e.str ;;
 
 
 let equation_swap (e : equation) = { lhs = e.rhs; rhs = e.lhs ; str = e.str}
+
+(* ********************
+   Examples of equations
+********************** *)
+let eq_nat_trans : equation =
+  { lhs = string_to_stuffData "(?c@(?n ?x) ; (?G ?f))" ;
+    rhs = string_to_stuffData "((?F ?f) ; ?c@(?n ?y))" ;
+    str = string_to_strToken "(natural transformation): ?n : ?F ⇒ ?G\n(morphism) ?f : ?x → ?y"
+  }
+
+(* could be used to move the cursor, but then it would nly work with compositions *)
+let eq_move_cursor : equation =
+  { lhs = string_to_stuffData "(?c@?x ; ?y)" ;
+    rhs = string_to_stuffData "(?x ; ?c@?y)" ;
+    str = string_to_strToken "Move cursor"}

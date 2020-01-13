@@ -207,23 +207,20 @@ let statusCmd =  ' ' , ("print expression and current cursor" , status)
 
 open Equation ;;
 
-let equationToShortString (e : equation) : string =
-  stuffDataToString emptyEnv e.lhs ^ "  =  " ^ stuffDataToString emptyEnv e.rhs ;;
-
-let equationToString (e : equation) : string =
-  equationToShortString e ^ "\n\n" ^
-    tokensToString e.str ;;
-
   
 
 let equation_rewrite (e : equation)() =
-  let (inf, _) = findMatchingDatCursor (! mainEnv).activeCursors e.lhs None (! mainExpr)
+  let (inf, _) = findMatchingDatCursor (! mainEnv).activeCursors e.lhs [] (! mainExpr)
   in
   let e' = equationSubst inf e in
   print_endline (equationToString e') ;
+  print_endline "-----------" ;
   let la = dclListDatMVars e'.rhs.stList in
   let lc = dclListCursorMVars e'.rhs.stList in
-  print_endline "Enter the following unspecified meta-variables:" ;
+  if la <> [] then 
+  ( print_string "Enter the following unspecified meta-variables: " ;
+  print_endline (join " " (List.map mvarToString la)) ;
+  print_endline "(type cancel to cancel)" ;)  ;
   let la' = List.map
       (fun m ->
          print_flush (mvarToString m ^" ") ;
@@ -231,7 +228,9 @@ let equation_rewrite (e : equation)() =
       )
       la
   in
-  print_endline "Enter the following unspecified cursors:" ;
+  if lc <> [] then 
+    (print_string "Enter the following unspecified cursors:" ;
+   print_endline (join " " (List.map mvarToString lc)) ;);
   let lc' = List.map
       (fun m ->
          print_flush (mvarToString m ^" ") ;
@@ -240,46 +239,25 @@ let equation_rewrite (e : equation)() =
       lc
   in
   let rhs' = stuffDataSubstMVars true { dcMVars = la' ; cursorMVars = lc'} e'.rhs in
-  let (_, e') = findMatchingDatCursor (! mainEnv).activeCursors e.lhs (Some rhs'.stList)
+  let (_, e') = findMatchingDatCursor (! mainEnv).activeCursors e.lhs (rhs'.stList)
       (! mainExpr)
   in
   mainExpr := e' ;;
+
+let equation_to_command
+    (e : equation) : string * (unit -> unit)
+  = (equationToShortString e, equation_rewrite e)
 
 let equation_to_mode (e : equation)(prompt : string) : 
   mode =
   (* (char * (string * (unit -> unit))) list = *)
   let e2 = equation_swap e in
   {commands = 
-  [ 'h', (equationToShortString e2, equation_rewrite e2) ;
-    'l', (equationToShortString e, equation_rewrite e)
+  [ 'h', equation_to_command e2 ;
+    'l', equation_to_command e
     
   ] ; prompt = prompt }
 
-let leftNt () =
-  let cur = getTheCursor () in
-  let n = natTransToLeftInfer cur (! mainExpr) in
-  let s = datCursorToString {! mainEnv with printCursors = false} in
-  Printf.printf "(natural transformation) %s : %s ⇒ ?1\n(morphism) %s : ?2 → %s\n"
-    (s n.nat) (s n.funct) (s n.mor) (s n.obj) ;
-  print_endline "Please fill these unknowns:" ;
-  print_flush "?1 : " ;
-  try 
-    let g = getDatCursor () in 
-    print_flush "?2 : " ;
-    let x = getDatCursor () in 
-    status () ;
-    mainExpr := natTransToLeft cur {funct = g ; obj = x} (! mainExpr)
-  with
-  Exit -> print_endline "Cancelling" 
-
-
-let ntMode : mode =
-  { commands = [
-        'h', ("move left (e.g.,  F f ; @{1}(n y) becomes n x ; G f)" , leftNt) ;
-        statusCmd 
-      ] 
-    ; prompt = "Natural transformations"
-  }
   (*
 let ntMode : mode =
   { commands = [
@@ -317,10 +295,15 @@ let idesactiveCursor () =
 
 let cursorMode : mode =
   { commands = 
-  [  'h' , ("move left", h );
-    'j' , ("move down", j) ;
+  [ 
+     'j' , ("move down", j) ;
     'k' , ("move up", k) ;
-    'l' , ("move right", l) ;
+     'h' , ("move left", h );
+     'l' , ("move right", l) ;
+     (* The advantage of h and l is that they don't care about the type of
+     composition. But we could also ignore this! *)
+     'H' , equation_to_command( equation_swap eq_move_cursor );
+     'L' , equation_to_command  eq_move_cursor ;
     'a' , ("activate cursor" , iactiveCursor) ;
     'd' , ("desactivate cursor" , idesactiveCursor) ;
     'n' , ("create new cursors at identifiers" , icursorsAtIdentifiers) ;
@@ -330,7 +313,7 @@ let cursorMode : mode =
 let expressionMode =
   { commands = 
       [  's' , ("set expression" , isetExpression)  ;
-         'n' , ("natural transformations mode" , wrapMode ntMode) ;
+         (* 'n' , ("natural transformations mode" , wrapMode ntMode) ; *)
            statusCmd 
       ] ; prompt = "Expression mode" };;
 
@@ -338,7 +321,7 @@ let mainMode : mode =
   { commands =[
     'c' , ("cursor mode", wrapMode cursorMode) ;
     'e' , ("expression mode", wrapMode expressionMode) ;
-    'n' , ("natural transformation mode (experimental)", wrapMode (equation_to_mode equation_nt "Natural Transformations")) ;
+    'n' , ("natural transformation mode (experimental)", wrapMode (equation_to_mode eq_nat_trans "Natural Transformations")) ;
     statusCmd 
   ] ; prompt = "Main menu"
   }
