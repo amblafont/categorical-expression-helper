@@ -12,6 +12,7 @@ rule token = parse
   | ')'            { RPAREN }
   | '{'            { LBRACE }
   | '}'            { RBRACE }
+  | "(x)"            { OTIMES }
   | '@'            { AT }
   | '?'            { QUESTION }
   | eof            { EOF }

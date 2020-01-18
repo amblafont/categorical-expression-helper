@@ -4,11 +4,18 @@ type ident = Name of string ;;
 type mvar = ident
 type cursor = Nb of int | CurMVar of mvar
 
+
 let cursorToInt = function
     Nb n -> n
   | CurMVar _ -> 0 ;;
 
-type stuffType = Composition | Other ;;
+type stuffType = Composition | Other | MonoidalProduct ;;
+
+let stuffTypeInfixStr = function
+    Composition -> " ; "
+  | Other -> " "
+  | MonoidalProduct -> "⊗";;
+
 type stuffData = { stTyp : stuffType ; stList : datCursor list}
   and dat = Ident of ident | Stuff of stuffData | MVar of mvar
   and datCursor = { data : dat ; cursors : cursor list}

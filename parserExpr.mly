@@ -6,7 +6,7 @@
 %token <string> IDENT 
 %token <int> INT
 %token LPAREN RPAREN
-%token SEMICOLON
+%token SEMICOLON OTIMES
 %token LBRACE RBRACE AT QUESTION
 %token EOF
 %start main             /* the entry point */
@@ -34,6 +34,7 @@ cursor :
 dat:
   | LPAREN listexpr RPAREN      { Base.mkListDat $2 Base.Other } 
   | LPAREN listsemiexpr RPAREN    { Base.mkListDat $2 Base.Composition }
+  | LPAREN listotimes RPAREN    { Base.mkListDat $2 Base.MonoidalProduct }
   | IDENT { Base.Ident (Name $1) }
   | QUESTION IDENT { Base.MVar (Name $2)}
     ;
@@ -43,5 +44,9 @@ listexpr:
 listsemiexpr:
     expr SEMICOLON expr
       { [ $1 ; $3 ] }
-  | expr SEMICOLON listsemiexpr { $1 :: $3 }
+  | expr SEMICOLON listsemiexpr { $1 :: $3 } ;
  
+
+listotimes:
+      expr OTIMES expr { [ $1 ; $3 ] }
+  | expr OTIMES listotimes { $1 :: $3 }

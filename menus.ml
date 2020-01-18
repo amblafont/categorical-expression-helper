@@ -13,8 +13,8 @@ let cursorMode : mode =
      'l' , ("move right", l) ;
      (* The advantage of h and l is that they don't care about the type of
      composition. But we could also ignore this! *)
-     'H' , equation_to_command( Equation.equation_swap Equation.eq_move_cursor );
-     'L' , equation_to_command  Equation.eq_move_cursor ;
+     'H' , equation_to_command( Equation.equation_swap MoreEquations.eq_move_cursor );
+     'L' , equation_to_command  MoreEquations.eq_move_cursor ;
     'a' , ("activate cursor" , iactiveCursor) ;
     'd' , ("desactivate cursor" , idesactiveCursor) ;
     'n' , ("create new cursors at identifiers" , icursorsAtIdentifiers) ;
@@ -32,7 +32,7 @@ let mainMode : mode =
   { commands =[
     'c' , ("cursor mode", wrapMode cursorMode) ;
     'e' , ("expression mode", wrapMode expressionMode) ;
-    'n' , ("natural transformation mode (experimental)", wrapMode (equation_to_mode Equation.eq_nat_trans "Natural Transformations")) ;
+    'n' , ("natural transformation mode (experimental)", wrapMode (equation_to_mode MoreEquations.eq_nat_trans "Natural Transformations")) ;
     statusCmd 
   ] ; prompt = "Main menu"
   }

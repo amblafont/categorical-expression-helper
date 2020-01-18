@@ -6,12 +6,10 @@ open Base
 
 let levelStuffType : stuffType -> level  = function
     Composition -> 3.0
+  | MonoidalProduct -> 3.0
   | Other -> 4.0
 let precPrefixCursors : level = 5.0
 
-let stuffTypeInfixStr = function
-   Composition -> " ; "
- | Other -> " ";;
 
 
 let rec join (ch : string) = function
