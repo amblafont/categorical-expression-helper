@@ -293,3 +293,10 @@ let eq_move_cursor : equation =
   { lhs = string_to_stuffData "(?c@?x ; ?y)" ;
     rhs = string_to_stuffData "(?x ; ?c@?y)" ;
     str = string_to_strToken "Move cursor"}
+
+    (* remove/add cursor (what about look for multiple matches) *)
+let eq_move_cursor : equation =
+  { lhs = string_to_stuffData "?c?x" ;
+    rhs = string_to_stuffData "?x" ;
+    str = string_to_strToken "Remove/add cursor"}
+

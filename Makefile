@@ -11,7 +11,7 @@ OUTPROG2=testparser
 # prog1 should be compiled to bytecode, and is composed of three
 # units: mod1, mod2 and mod3.
 
-PROG1_WITHOUT_TOP=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo 
+PROG1_WITHOUT_TOP=lib.cmo base.cmo lexerExpr.cmo parserExpr.cmo stringstuff.cmo aideur.cmo equation.cmo toplib.cmo menus.cmo
 
 # The list of object files for prog1
 PROG1_OBJS=$(PROG1_WITHOUT_TOP) top.cmo

@@ -1,6 +1,6 @@
 (* Tip: to remove an active cursor, go up until it disappears *)
 (* Equation.coucou ();; *)
-Toplib.startLoop() ;;
+Menus.startLoop() ;;
 (*
 
 # # # # # # # # mainCur := test ;;
