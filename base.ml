@@ -14,7 +14,7 @@ type stuffType = Composition | Other | MonoidalProduct ;;
 let stuffTypeInfixStr = function
     Composition -> " ; "
   | Other -> " "
-  | MonoidalProduct -> "⊗";;
+  | MonoidalProduct -> " ⊗ ";;
 
 type stuffData = { stTyp : stuffType ; stList : datCursor list}
   and dat = Ident of ident | Stuff of stuffData | MVar of mvar

@@ -24,4 +24,16 @@ let eq_move_cursor : equation =
     lhs = {stTyp = Other ; stList = [ {data = MVar (Name "x"); cursors = [ CurMVar (Name "c")]} ]};
     (* rhs = string_to_stuffData "?x" *)
     rhs = {stTyp = Other ; stList = [ {data = MVar (Name "x"); cursors = []} ]};
-    str = string_to_strToken "Remove/add cursor"}
+    str = string_to_strToken "Remove/add cursor"} ;;
+
+(* Monoidal product *)
+
+let rho_lambda_eq =
+  { lhs = string_to_stuffData "?c@(id I)" ;
+    rhs = string_to_stuffData "((rho I) ; ?c@(lambda I))" ;
+    str = string_to_strToken "rho lambda"}
+
+let triangle_eq =
+  { lhs = string_to_stuffData "(id (?a (x) ?b))" ;
+    rhs = string_to_stuffData "(((rho ?a) (x) ?b) ; (alpha ?a I ?b) ; (?a (x) (lambda ?b)))" ;
+    str = string_to_strToken "triangle"}

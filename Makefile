@@ -3,7 +3,7 @@ OCAMLMKTOP=ocamlmktop
 OCAMLOPT=ocamlopt
 OCAMLDEP=ocamldep -intf .mli -intf .mly -impl .mli -impl .mll -impl .mly
 INCLUDES=unix.cma                 # all relevant -I options here
-OCAMLFLAGS=$(INCLUDES)    # add other options for ocamlc here
+OCAMLFLAGS=$(INCLUDES) -g   # add other options for ocamlc here
 OCAMLOPTFLAGS=$(INCLUDES) # add other options for ocamlopt here
 
 OUTPROG1=mainloop 

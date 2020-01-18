@@ -15,6 +15,8 @@ let cursorMode : mode =
      composition. But we could also ignore this! *)
      'H' , equation_to_command( Equation.equation_swap MoreEquations.eq_move_cursor );
      'L' , equation_to_command  MoreEquations.eq_move_cursor ;
+     't', equation_to_command  MoreEquations.triangle_eq ;
+     'r', equation_to_command  MoreEquations.rho_lambda_eq ;
     'a' , ("activate cursor" , iactiveCursor) ;
     'd' , ("desactivate cursor" , idesactiveCursor) ;
     'n' , ("create new cursors at identifiers" , icursorsAtIdentifiers) ;
