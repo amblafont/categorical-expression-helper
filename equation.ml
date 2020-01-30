@@ -132,7 +132,7 @@ and matchStuffDataHeadWith (activeCursors : cursor list)(st : stuffData) (st' : 
     (* and matchCursorsWith _ _ = true *)
 
 
-(* the second projection says what happens if replacing the matching with replaceWith *)
+(* the returned second projection says what happens if replacing the matching [h] with [replaceWith] *)
 let rec findMatchingDatCursor (activeCursors : cursor list)(h : stuffData)(replaceWith : datCursor list)(d : datCursor) : inferMVar * datCursor =
   (match d.data with
    | Stuff st ->
@@ -188,10 +188,12 @@ let rec datSubstMVars (raiseExc : bool)(env : inferMVar) (d : dat) : dat =
     Stuff (stuffDataSubstMVars raiseExc env st)
   | MVar x -> dcMVarSubstMVars raiseExc env x
 and stuffDataSubstMVars (raiseExc : bool)(env : inferMVar) (s : stuffData) : stuffData =
-  { s with stList = List.map (datCursorSubstMVars raiseExc env) s.stList }
+  { s with stList = datCursorlSubstMVars raiseExc env s.stList }
 and datCursorSubstMVars (raiseExc : bool) (env : inferMVar) (d : datCursor) : datCursor =
   { cursors = cursorsSubstMVars raiseExc env.cursorMVars d.cursors ;
     data = datSubstMVars raiseExc env d.data}
+  and datCursorlSubstMVars (raiseExc : bool)(env : inferMVar) (l : datCursor list) : datCursor list =
+    List.map (datCursorSubstMVars raiseExc env) l
 
 
 type strToken = Str of string
@@ -251,12 +253,17 @@ and dcMVar_charl_to_tokenl (s : char list)(prev : string) : strToken list =
 let string_to_strToken (s : string) : strToken list =
   str_charl_to_tokenl (explode s) ""
 
-type equation = { lhs : stuffData ; rhs : stuffData ; str : strToken list} ;;
+type equation = { lhs : datCursor list ; rhs : datCursor list ;
+                  typ : stuffType ; str : strToken list} ;;
+
+let lhs_stData (e : equation) : stuffData = { stTyp = e.typ ; stList = e.lhs }
+let rhs_stData (e : equation) : stuffData = { stTyp = e.typ ; stList = e.rhs }
 
 let equationSubst (env : inferMVar) (e : equation) : equation =
   { 
-    lhs = stuffDataSubstMVars false env e.lhs ;
-    rhs = stuffDataSubstMVars false env e.rhs ;
+    lhs = datCursorlSubstMVars false env e.lhs ;
+    rhs = datCursorlSubstMVars false env e.rhs ;
+    typ = e.typ ;
     str = List.map (strTokenSubst env) e.str ;
   }
 
@@ -270,13 +277,14 @@ let equationSubst (env : inferMVar) (e : equation) : equation =
 (* type equation = handside * handside;; *)
 
 let equationToShortString (e : equation) : string =
-  stuffDataToString emptyEnv e.lhs ^ "  =  " ^ stuffDataToString emptyEnv e.rhs ;;
+  stuffDataToString emptyEnv (lhs_stData e) ^ "  =  " ^ stuffDataToString emptyEnv (rhs_stData e) ;;
 
 let equationToString (e : equation) : string =
   equationToShortString e ^ "\n\n" ^
   tokensToString e.str ;;
 
 
-let equation_swap (e : equation) = { lhs = e.rhs; rhs = e.lhs ; str = e.str}
+let equation_swap (e : equation) : equation =
+  { e with lhs = e.rhs; rhs = e.lhs }
 
 

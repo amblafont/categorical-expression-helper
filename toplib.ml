@@ -210,13 +210,13 @@ open Equation ;;
   
 
 let equation_rewrite (e : equation)() =
-  let (inf, _) = findMatchingDatCursor (! mainEnv).activeCursors e.lhs [] (! mainExpr)
+  let (inf, _) = findMatchingDatCursor (! mainEnv).activeCursors (lhs_stData e) [] (! mainExpr)
   in
   let e' = equationSubst inf e in
   print_endline (equationToString e') ;
   print_endline "-----------" ;
-  let la = dclListDatMVars e'.rhs.stList in
-  let lc = dclListCursorMVars e'.rhs.stList in
+  let la = dclListDatMVars e'.rhs in
+  let lc = dclListCursorMVars e'.rhs in
   if la <> [] then 
   ( print_string "Enter the following unspecified meta-variables: " ;
   print_endline (join " " (List.map mvarToString la)) ;
@@ -238,8 +238,8 @@ let equation_rewrite (e : equation)() =
       )
       lc
   in
-  let rhs' = stuffDataSubstMVars true { dcMVars = la' ; cursorMVars = lc'} e'.rhs in
-  let (_, e') = findMatchingDatCursor (! mainEnv).activeCursors e.lhs (rhs'.stList)
+  let rhs' = datCursorlSubstMVars true { dcMVars = la' ; cursorMVars = lc'} e'.rhs in
+  let (_, e') = findMatchingDatCursor (! mainEnv).activeCursors (lhs_stData e) rhs'
       (! mainExpr)
   in
   mainExpr := e' ;;
