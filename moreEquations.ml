@@ -48,24 +48,24 @@ let eq_add_cursor : equation =
 
 let rho_lambda_eq =
   { lhs = string_to_dcList "?c@(id I)" ;
-    rhs = string_to_dcList "((rho I) ; ?c@(lambda I))" ;
+    rhs = string_to_dcList "((ρ I) ; ?c@(λ I))" ;
     typ = Composition ;
-    str = string_to_strToken "rho lambda"}
+    str = string_to_strToken "ρ λ"}
 
 let triangle_eq =
-  { lhs = string_to_dcList "(id (?a (x) ?b))" ;
-    rhs = string_to_dcList "(((rho ?a) (x) ?b) ; (alpha ?a I ?b) ; (?a (x) (lambda ?b)))" ;
+  { lhs = string_to_dcList "(id (?a ⊗ ?b))" ;
+    rhs = string_to_dcList "(((ρ ?a) ⊗ ?b) ; (α ?a I ?b) ; (?a ⊗ (λ ?b)))" ;
     typ = Composition ;
     str = string_to_strToken "triangle"}
 
 let alpha_lambda_eq =
   {
-    lhs = string_to_dcList "?c@(((lambda ?a) (x) ?b))" ;
-    rhs = string_to_dcList "((alpha I ?a ?b) ; ?c@(lambda (?a (x) ?b)))" ;
+    lhs = string_to_dcList "?c@(((λ ?a) ⊗ ?b))" ;
+    rhs = string_to_dcList "((α I ?a ?b) ; ?c@(λ (?a ⊗ ?b)))" ;
     typ = Composition ;
-    str = string_to_strToken "alpha lambda"}
-(* let rho_alpha_eq =
+    str = string_to_strToken "α λ"}
+(* let ρ_α_eq =
  *   {
  *     lhs = string_to_stuffData "?c@(a ; ?b)" ;
- *     rhs = string_to_stuffData "((alpha I ?a ?b) ; ?c@(lambda (?a (x) ?b)))" ;
- *     str = string_to_strToken "alpha lambda"} *)
+ *     rhs = string_to_stuffData "((α I ?a ?b) ; ?c@(λ (?a ⊗ ?b)))" ;
+ *     str = string_to_strToken "α λ"} *)
