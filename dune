@@ -1,0 +1,7 @@
+;; This declares the hello_world executable implemented by hello_world.ml
+(executable
+ (name top)
+ (libraries menhirLib sedlex unix)
+ (preprocess (pps sedlex.ppx))
+)
+ (menhir (modules parserExpr))

@@ -64,8 +64,10 @@ and stuffDataToString (env : env) (s : stuffData) =
 ;;
 
 let string_to_datCursor (s : string) : datCursor =
-            let lexbuf = Lexing.from_string s in
-            let result = ParserExpr.main LexerExpr.token lexbuf in
+            let lexbuf = Sedlexing.Utf8.from_string s in
+            (* let lexer  = Sedlexing.with_tokenizer LexerExpr.token lexbuf in *)
+            let parser = MenhirLib.Convert.Simplified.traditional2revised ParserExpr.main in
+            let result = parser (LexerExpr.lexer lexbuf) in
      result ;;
 
 

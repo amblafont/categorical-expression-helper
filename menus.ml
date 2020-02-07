@@ -1,8 +1,4 @@
 
-open Base ;;
-open Stringstuff ;;
-open Aideur;;
-open Lib;;
 open Toplib;;
 let cursorMode : mode =
   { commands = 

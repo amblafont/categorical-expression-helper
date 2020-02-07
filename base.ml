@@ -60,14 +60,16 @@ let rec listDcMultiCurs (activeCursors : cursor list)(d : datCursor) : datCursor
   else
     x
 
-let rec listActiveCursors (activeCursors : cursor list)(d : datCursor) : cursor list =
+let listActiveCursors (activeCursors : cursor list)(d : datCursor) : cursor list =
   List.filter (fun x -> List.mem x activeCursors) (listCursors d)
 
+(*
 let rec dcListDatMVars (d : datCursor) : mvar list =
   match d.data with
   | Ident _ -> []
   | MVar x -> [ x ]
   | Stuff st -> List.flatten (List.map dcListDatMVars st.stList)
+*)
 
 let rec dcListCursorMVars (d : datCursor) : mvar list =
   List.flatten (List.map (function CurMVar x -> [x] | _ -> []) d.cursors) @

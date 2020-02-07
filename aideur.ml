@@ -2,7 +2,6 @@
 (* on peut envisager une version encore moins typée mor : ident_mor of String | Stuff of (mor list) list *)
 
 open Base ;;
-open Stringstuff ;;
 
 open Lib ;;
 
@@ -96,10 +95,10 @@ let rec downCursor (cc : cursor) (d : datCursor) : datCursor =
    (
     match d.data with
     Ident _ | MVar _ -> d
-  | Stuff ({stList = (t :: q)} as dd) ->
+  | Stuff ({stList = (t :: q) ; _} as dd) ->
        dcRemoveCursor cc { d with data =
         Stuff {dd with stList = dcAddCursor cc t :: q }} 
-  | Stuff {stList = []}  -> raise Not_found)
+  | Stuff {stList = [] ; _}  -> raise Not_found)
   else
     match d.data with
     | Ident _ | MVar _ -> d

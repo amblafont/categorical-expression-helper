@@ -1,9 +1,9 @@
 
 open Base;;
 open Equation;;
-open Stringstuff;;
 let string_to_dcList (s : string) : datCursor list =
-  (string_to_stuffData "(?c@(?n ?x) ; (?G ?f))" ).stList
+  (* (string_to_stuffData "(?c@(?n ?x) ; (?G ?f))" ).stList *)
+  (string_to_stuffData s).stList
 (* ********************
    Examples of equations
  ********************** *)
@@ -35,7 +35,7 @@ let eq_move_cursor : equation =
     str = string_to_strToken "Move cursor"}
 
 (* remove/add cursor (what about look for multiple matches) *)
-let eq_move_cursor : equation =
+let eq_add_cursor : equation =
   {
     (* lhs = string_to_stuffData "?c@?x" ; *)
     lhs = [ one_guy_one_cursor ];

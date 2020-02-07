@@ -111,7 +111,7 @@ and matchCursorHeadWith (activeCursors : cursor list)(c : cursor )(c' : cursor l
     Nb _ -> if List.mem c c' then emptyInferMVar else raise Not_found
   | CurMVar x ->
     match List.filter (fun x -> List.mem x activeCursors) c' with
-      t :: q -> { dcMVars = [] ; cursorMVars = [ (x , t) ]}
+      t :: _ -> { dcMVars = [] ; cursorMVars = [ (x , t) ]}
     | [] -> raise Not_found
 and matchDatHeadWith (activeCursors : cursor list)(d : dat)(d' : dat) :
   inferMVar =
@@ -183,7 +183,7 @@ let dcMVarSubstMVars (raiseExc : bool)(env : inferMVar) (x : mvar) : dat =
 
 let rec datSubstMVars (raiseExc : bool)(env : inferMVar) (d : dat) : dat =
   match d with 
-    Ident i -> d
+    Ident _ -> d
   | Stuff st ->
     Stuff (stuffDataSubstMVars raiseExc env st)
   | MVar x -> dcMVarSubstMVars raiseExc env x
