@@ -1,7 +1,7 @@
 let digit = [%sedlex.regexp? '0'..'9']
 let number = [%sedlex.regexp? Plus digit]
 let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z'|
-  u'α' | u'ρ' | u'λ' ]
+  u'α' .. u'ω' ]
 
 
 open ParserExpr        
