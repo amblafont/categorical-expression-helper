@@ -1,10 +1,8 @@
 let digit = [%sedlex.regexp? '0'..'9']
 let number = [%sedlex.regexp? Plus digit]
 let letter = [%sedlex.regexp? 'a'..'z'|'A'..'Z'|
-  945 | 961 | 955 ]
-   (* "α"|"ρ"|"λ"] *)
+  u'α' | u'ρ' | u'λ' ]
 
-(* |'λ'|'ρ']  *)
 
 open ParserExpr        
 exception Eof
@@ -20,9 +18,7 @@ let rec token buf =
   | ')'            -> RPAREN 
   | '{'            -> LBRACE 
   | '}'            -> RBRACE 
-  | 8855 (* "⊗" *)            -> OTIMES 
-  (* | "ρ"            -> failwith "c'est moi!"
-  | "ρ"            -> failwith "c'est moi!" *)
+  | u'⊗'            -> OTIMES 
   | '@'            -> AT 
   | '?'            -> QUESTION 
   | eof            -> EOF 

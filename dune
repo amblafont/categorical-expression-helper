@@ -5,3 +5,16 @@
  (preprocess (pps sedlex.ppx))
 )
  (menhir (modules parserExpr))
+  (rule 
+    (target lexerExpr.ml)
+    (deps lexerExpr.mlu char_codepoint.py)
+    (action (chdir %{workspace_root} 
+             ( with-stdin-from lexerExpr.mlu
+             ( with-stdout-to %{target}
+        
+             (run python char_codepoint.py)
+     ))
+    ))
+
+   )
+

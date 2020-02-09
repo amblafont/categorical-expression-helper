@@ -7,7 +7,7 @@ let
 in
 { nixpkgs ? import <nixpkgs> {} }:
 with nixpkgs; mkShell {
-  buildInputs = [ unstable.ocaml unstable.ocamlPackages.dune unstable.ocamlPackages.findlib unstable.ocamlPackages.menhir 
+  buildInputs = [ unstable.ocaml unstable.ocamlPackages.dune_2 unstable.ocamlPackages.findlib unstable.ocamlPackages.menhir 
      unstable.ocamlPackages.sedlex_2
 unstable.ocamlPackages.ppx_tools_versioned
  ];
